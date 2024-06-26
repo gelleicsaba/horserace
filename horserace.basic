@@ -1,0 +1,1448 @@
+using "mem.basic"
+
+define ClearScreen=PRINTCHR$(147)
+define >>=POKE
+define ->=TO
+
+number $pos
+number $cpos
+number $cpos2
+number $mem
+number $tmp
+number $i
+number $j
+number $k
+number $l
+number $x
+number $y
+number $rnd1
+number $rnd2
+
+define {keyA}=CHR$(h'c1)
+define {keyS}=CHR$(h'd3)
+define {keyD}=CHR$(h'c4)
+define {keyW}=CHR$(h'd7)
+define {keyE}=CHR$(h'c5)
+define {keyR}=CHR$(h'd2)
+define {keyQ}=CHR$(h'd1)
+define {keyP}=CHR$(h'd0)
+define {keyShSpace}=CHR$(h'a0)
+define {key1}=CHR$(h'21)
+define {key2}=CHR$(h'22)
+define {key3}=CHR$(h'23)
+define {key4}=CHR$(h'24)
+define {key5}=CHR$(h'25)
+define {key6}=CHR$(h'26)
+
+number $xpos
+number $ypos
+
+number $pre_xpos
+number $pre_ypos
+number $pre_pos
+number $step
+
+number $num
+number $digit
+
+# player stat
+number $money
+number $pre_money
+number $days
+number $plus
+number $wcount
+
+# bank stats
+number $bankmoney
+number $bank_cap1
+number $bank_cap2
+number $bank_cap3
+number $bank_rate1
+number $bank_rate2
+number $bank_rate3
+number $bank_cnt
+
+number $timeStart
+number $timeEnd
+number $timeShow
+number $timeCount
+
+number $menupos
+number $pre_menupos
+number $menu_choosen
+
+number $horse_str
+number $horse_term
+number $horse_speed
+number $horse_chn1
+number $horse_chn2
+number $horse_pos
+number $horse_prepos
+number $horse_done
+number $horse_steps
+number $horse_1st
+number $horse_2nd
+number $horse_orders
+number $horse_bet
+
+number $horse_mnupos
+number $horse_premnupos
+number $horse_mnucnt
+
+number $house_ok
+number $house_bought
+number $finished
+
+define {workTime}=2100
+define {workBadPanels}=20
+define {workBlackParts}=45
+define {workSalaryRate}=0.45
+define {moneyPosX}=9
+define {moneyPosY}=0
+define {timePosX}=9
+define {timePosY}=1
+define {plyChar}=h'51
+
+define {housePosX}=3
+define {housePosY}=7
+define {gambPosX}=11
+define {gambPosY}=7
+define {workPosX}=20
+define {workPosY}=7
+define {bankPosX}=30
+define {bankPosY}=7
+
+define {true}=1
+define {false}=0
+
+define {gamblemnusign}=h'1f
+define {horsesign}=h'5e
+define {brokenhorse}=h'62
+
+define {rate1add}=10
+define {rate1rnd}=20
+define {rate2add}=2
+define {rate2rnd}=43
+define {rate3fix}=16
+
+define {horses_unpredictable}=9
+define {horses_fallrate}=15
+define {horse_str}=5
+define {horse_str_add}=3
+define {horse_str_term}=6
+define {horse_str_term_add}=3
+
+define {win_rate1st}=1.5
+define {win_rate2ndAdd}=1.5
+define {win_rate2nd}=1
+
+define {house_price1}=2000
+define {house_price2}=5000
+define {house_price3}=10000
+
+define {houserentperday1}=55
+define {houserentperday2}=125
+
+# resources
+define {HOUSE}=HOUSE
+define {GAMBLE}=GAMBLE
+define {WORK}=WORK
+define {BANK}=BANK
+
+string $key
+    # >> H'0328,h'ef
+    # >> H'0318,h'c1
+        []
+    DIM $horse_str(7)
+    DIM $horse_term(7)
+    DIM $horse_speed(7)
+    DIM $horse_pos(7)
+    DIM $horse_steps(7)
+    DIM $horse_done(7)
+    DIM $horse_prepos(7)
+    DIM $horse_orders(7)
+    GOTO @start:
+        [/]
+
+number $wMillis
+METHOD Wait $wMillis
+    $tmp=TI+$wMillis
+    WHILE TI<$tmp
+    REPEAT
+    RETURN
+
+number $snNum
+number $snX
+number $snY
+METHOD ShowNum $snX,$snY,$snNum
+        []
+    $pos={screen}+(40*$snY)+$snX
+    $digit=INT($snNum/10000)
+    $snNum=$snNum-($digit*10000)
+    >> $pos,$digit+h'30
+
+    $digit=INT($snNum/1000)
+    $snNum=$snNum-($digit*1000)
+    >> $pos+1,$digit+h'30
+
+    $digit=INT($snNum/100)
+    $snNum=$snNum-($digit*100)
+    >> $pos+2,$digit+h'30
+
+    $digit=INT($snNum/10)
+    $snNum=$snNum-($digit*10)
+    >> $pos+3,$digit+h'30
+
+    $digit=$snNum
+    >> $pos+4,$digit+h'30
+    RETURN
+        [/]
+
+METHOD ShowRate $snX,$snY,$snNum
+    TEXT $snX,$snY,0.00
+        []
+    $pos={screen}+(40*$snY)+$snX
+
+    $digit=INT($snNum/10)
+    $snNum=$snNum-($digit*10)
+    >> $pos+4,$digit+h'30
+
+    $digit=$snNum
+    >> $pos+5,$digit+h'30
+    RETURN
+        [/]
+
+METHOD DayStep
+        []
+    $days=$days+1
+    $bank_cnt=$bank_cnt+1
+    $bank_cap1=$bank_cap1+($bank_cap1*($bank_rate1/1000))
+    $bank_cap2=$bank_cap2+($bank_cap2*($bank_rate2/1000))
+    $bank_cap3=$bank_cap3+($bank_cap3*($bank_rate3/1000))
+        [/]
+    WHEN $bank_cnt>=2
+            []
+        $bank_cnt=0
+        $bank_rate1=INT(RND(0)*{rate1rnd})+{rate1add}
+        $bank_rate2=INT(RND(0)*{rate2rnd})+{rate2add}
+            [/]
+    SKIP
+    $bankmoney=$bank_cap1+$bank_cap2+$bank_cap3
+
+    IF ($house_bought AND 1)>0 THEN $money=$money+{houserentperday1}
+    IF ($house_bought AND 2)>0 THEN $money=$money+{houserentperday2}
+    CALL ShowNum {bankPosX},{bankPosY}+5,$bankmoney
+    CALL ShowNum 30,1,$days
+    RETURN
+
+METHOD ShowWork
+    ClearScreen
+
+    TEXT {moneyPosX}-7,{moneyPosY},MONEY:
+    CALL ShowNum {moneyPosX},{moneyPosY},$money
+    COLOR {moneyPosX}-7,{moneyPosY},12,{yellow}
+
+    define {WORK1}=REPAIR
+    define {WORK2}=THE_PANELS
+    TEXTINV 21,0,{WORK1}
+    TEXTINV 19,1,{WORK2}
+    COLOR 21,0,len{WORK1},{orange}
+    COLOR 19,1,len{WORK2},{orange}
+
+    TEXTINV 2,3,W:UP
+    TEXTINV 2,4,S:DOWN
+    TEXTINV 2,5,D:LEFT
+    TEXTINV 2,6,A:RIGHT
+    define {WORK3}=P:REPAIR
+    TEXTINV 2,7,{WORK3}
+    TEXTINV 2,8,R:READY
+    COLOR 2,3,len{WORK3},{lightgrey}
+    COLOR 2,4,len{WORK3},{lightgrey}
+    COLOR 2,5,len{WORK3},{lightgrey}
+    COLOR 2,6,len{WORK3},{lightgrey}
+    COLOR 2,7,len{WORK3},{lightgrey}
+    COLOR 2,8,len{WORK3},{lightgrey}
+
+    FOR $i=4->13
+        FILL 16,$i,10,h'5b
+        COLOR 16,$i,10,{lightgreen}
+    NEXT
+
+    TEXTINV 5,16,CHOOSE_THE_INCORRECT_PANEL
+    TEXTINV 5,17,PRESS_P_MULTIPLE_TIMES_TO_REPAIR
+    TEXTINV 5,18,AVOID_THE_BLACK_DANGEROUS_PLACES
+    
+    $j=0
+    WHILE $j<{workBadPanels}
+            []
+        $rnd1=INT(RND(0)*9)
+        $rnd2=INT(RND(0)*9)
+        $pos={screen}+(40*(4+$rnd1))+16+$rnd2
+            [/]
+        WHEN PEEK($pos)=h'5b
+                []
+            $cpos={color}+(40*(4+$rnd1))+16+$rnd2
+            $rnd1=(INT(RND(0)*4))+1
+            >> $pos,h'66+$rnd1
+            >> $cpos,{purple}
+            $j=$j+1
+                [/]
+        SKIP
+    REPEAT
+    FOR $j=0->{workBlackParts}
+            []
+        $rnd1=INT(RND(0)*9)+16
+        $rnd2=INT(RND(0)*9)+5
+        $pos={screen}+(40*$rnd2)+$rnd1
+            [/]
+        WHEN PEEK($pos)=h'5b AND $rnd1<>0 AND $rnd2<>0
+                []
+            $cpos={color}+(40*$rnd2)+$rnd1
+            >> $cpos,0
+            >> $pos,h'e0
+                [/]
+        SKIP
+    NEXT
+    RETURN
+
+METHOD RunWork
+        []
+    $wcount=0
+    $pre_xpos=0
+    $pre_ypos=0
+    $xpos=0
+    $ypos=0
+    $mem=PEEK({screen}+(4*40)+16)
+    >> {screen}+(4*40)+16,{plyChar}
+    $step=0
+    $timeCount=0
+        [/]
+    define {RUNWORK1}=TIME:
+    TEXT {timePosX}-6,{timePosY},{RUNWORK1}
+    COLOR {timePosX}-6,{timePosY},len{RUNWORK1}+6,{lightgreen}
+        []
+    $timeStart=TI
+    $timeEnd=$timeStart+{workTime}
+        [/]
+    CALL ShowNum {timePosX},{timePosY},INT(($timeEnd-TI)/100)
+
+@runWork:
+    GET $key
+    IF $key="W" OR $key={keyW} THEN $ypos=$ypos-1
+    IF $key="S" OR $key={keyS} THEN $ypos=$ypos+1
+    IF $key="A" OR $key={keyA} THEN $xpos=$xpos-1
+    IF $key="D" OR $key={keyD} THEN $xpos=$xpos+1
+    WHEN $key="P" OR $key={keyP}
+        $pos={screen}+(40*(4+$ypos))+$xpos+16
+        WHEN $mem>h'66
+                []
+            $mem=$mem-1
+            >> $pos,$mem
+                [/]
+            IF $mem=h'66 THEN $wcount=$wcount+1 : >> {color}+(40*(4+$ypos))+$xpos+16,3
+            GOTO @runWork:
+        SKIP
+    SKIP
+    IF $key="R" OR $key={keyR} THEN GOTO @workReady:
+
+    IF $xpos<0 THEN $xpos=9:GOTO @runWork:
+    IF $xpos>9 THEN $xpos=0:GOTO @runWork:
+    IF $ypos<0 THEN $ypos=9:GOTO @runWork:
+    IF $ypos>9 THEN $ypos=0:GOTO @runWork:
+    $timeCount=$timeCount+1
+
+    WHEN $timeCount>25
+        $timeShow=INT(($timeEnd-TI)/100)
+        IF $timeShow<0 THEN GOTO @workReady:
+        CALL ShowNum {timePosX},{timePosY},$timeShow
+        $timeCount=0
+    SKIP
+
+    IF $xpos=$pre_xpos AND $ypos=$pre_ypos THEN GOTO @runWork:
+        []
+    $pos={screen}+(40*($ypos+4))+16+$xpos
+    $tmp=PEEK($pos)
+        [/]
+    IF $tmp=h'e0 THEN GOTO @workEnd:
+        []
+    $pre_pos={screen}+(40*($pre_ypos+4))+16+$pre_xpos
+    >> $pre_pos,$mem
+    >> $pos,{plyChar}
+    $mem=$tmp
+    $pre_xpos=$xpos
+    $pre_ypos=$ypos
+    $step=$step+1
+        [/]
+    GOTO @runWork:
+
+@workReady:
+    $plus=INT($wcount*{workSalaryRate})
+
+    FILL 5,16,26,h'e0
+    FILL 5,17,33,h'e0
+    FILL 5,18,32,h'e0
+    FILL 5,19,23,h'e0
+
+    WHEN $plus>0
+        TEXTINV 5,16,THANKS_FOR_THE_JOB!
+        TEXTINV 5,17,YOU_EARNED_MONEY_:)
+        define {RUNWORK2}=SALARY:
+        TEXT 2,10,{RUNWORK2}
+        CALL ShowNum 9,10,$plus
+        COLOR 2,10,len{RUNWORK2}+6,{yellow}
+    SKIP
+
+    FOR $j=0->$plus
+        CALL ShowNum {moneyPosX},{moneyPosY},$money+$j
+    NEXT
+    $money=$money+$plus
+    
+    define {RUNWORK3}=PRESS_R_TO_GO_MENU
+    TEXTINV 5,18,{RUNWORK3}
+    COLOR 5,18,len{RUNWORK3},{lightgreen}
+
+    $key=""
+    WHILE $key<>"R" AND $key<>{keyR}
+        GET $key
+    REPEAT
+
+    WHEN $wcount>6
+        CALL DayStep
+    SKIP
+
+@workEnd:
+    RETURN
+
+METHOD WaitSpace
+@WaitSpace:
+    GET $key
+    IF $key<>" " THEN GOTO @WaitSpace:
+    RETURN
+
+METHOD MainMenu
+    ClearScreen
+
+    FILL 0,0,40,h'a0
+    COLOR 0,0,40,{lightblue}
+
+    FILL 0,12,40,h'a0
+    COLOR 0,12,40,{lightblue}
+    FILL 0,13,40,h'a0
+    COLOR 0,13,40,{lightblue}
+    FILL 0,14,40,h'a0
+    COLOR 0,14,40,{lightblue}
+
+    FILL 0,23,40,h'a0
+    COLOR 0,23,40,{lightblue}
+    FILL 0,24,40,h'a0
+    COLOR 0,24,40,{lightblue}
+
+        []
+    $x=7
+    $y=4
+        [/]
+    VFILL $x,$y,5,h'08
+    VCOLOR $x,$y,5,{orange}
+    TEXT $x+1,$y+2,HH
+    COLOR $x+1,$y+2,2,{orange}
+    VTEXT $x+3,$y,HHHHH
+    VCOLOR $x+3,$y,5,{orange}
+    TEXT $x+5,$y+4,O_R_S_E
+    COLOR $x+5,$y+4,7,{orange}
+
+    VFILL $x+15,$y,5,h'12
+    VCOLOR $x+15,$y,5,{green}
+    TEXT $x+16,$y,RR
+    COLOR $x+16,$y,2,{green}
+    TEXT $x+16,$y+2,RR
+    COLOR $x+16,$y+2,2,{green}
+    VTEXT $x+18,$y+1,R_RR
+    VCOLOR $x+18,$y+1,4,{green}
+    TEXT $x+20,$y+4,A_C_E
+    COLOR $x+20,$y+4,5,{green}
+
+    TEXTINV 11,18,CREATED_BY_CSAB4E
+    COLOR 11,18,17,{yellow}
+
+    TEXT 9,20,PRESS_SPACE_TO_START!
+    COLOR 9,20,21,{purple}
+
+    SCREEN 0,11, h'5e,h'20,h'20,h'5e,h'20,h'20,h'5e,h'20,h'20,h'5e,h'20,h'20,h'5e,h'20,h'20,h'5e,h'20,h'20,h'5e,h'20,h'20,h'5e,h'20,h'20,h'5e,h'20,h'20,h'5e,h'20,h'20,h'5e,h'20,h'20,h'5e,h'20,h'20,h'5e,h'20,h'20,h'5e
+    SCREEN 0,1, h'5e,h'20,h'20,h'5e,h'20,h'20,h'5e,h'20,h'20,h'5e,h'20,h'20,h'5e,h'20,h'20,h'5e,h'20,h'20,h'5e,h'20,h'20,h'5e,h'20,h'20,h'5e,h'20,h'20,h'5e,h'20,h'20,h'5e,h'20,h'20,h'5e,h'20,h'20,h'5e,h'20,h'20,h'5e    
+
+@mainMenuCycle:
+    GET $key
+    IF $key=" " OR $key={keyShSpace} THEN GOTO @mainMenuExit:
+    COLORS 0,11, 10,06,06,01,06,06,05,06,06,10,06,06,01,06,06,05,06,06,10,06,06,01,06,06,05,06,06,10,06,06,01,06,06,05,06,06,10,06,06,01
+    COLORS 0,1, 01,06,06,05,06,06,10,06,06,01,06,06,05,06,06,10,06,06,01,06,06,05,06,06,10,06,06,01,06,06,05,06,06,10,06,06,01,06,06,05
+    GET $key
+    IF $key=" " OR $key={keyShSpace} THEN GOTO @mainMenuExit:
+    COLORS 0,11, 01,06,06,05,06,06,10,06,06,01,06,06,05,06,06,10,06,06,01,06,06,05,06,06,10,06,06,01,06,06,05,06,06,10,06,06,01,06,06,05
+    COLORS 0,1, 05,06,06,10,06,06,01,06,06,05,06,06,10,06,06,01,06,06,05,06,06,10,06,06,01,06,06,05,06,06,10,06,06,01,06,06,05,06,06,10
+    GET $key
+    IF $key=" " OR $key={keyShSpace} THEN GOTO @mainMenuExit:
+    COLORS 0,11, 05,06,06,10,06,06,01,06,06,05,06,06,10,06,06,01,06,06,05,06,06,10,06,06,01,06,06,05,06,06,10,06,06,01,06,06,05,06,06,10
+    COLORS 0,1, 10,06,06,01,06,06,05,06,06,10,06,06,01,06,06,05,06,06,10,06,06,01,06,06,05,06,06,10,06,06,01,06,06,05,06,06,10,06,06,01
+    GOTO @mainMenuCycle:
+@mainMenuExit:
+
+    RETURN
+
+METHOD Menu
+    ClearScreen
+    SCREEN {housePosX},{housePosY}+2, h'4e,h'77,h'4d
+    SCREEN {housePosX},{housePosY}+3, h'4c,h'6f,h'7a
+    COLOR {housePosX},{housePosY}+2,3,{lightred}
+    COLOR {housePosX},{housePosY}+3,3,{lightred}
+
+    SCREEN {gambPosX},{gambPosY}+2, h'5b,h'20,h'20,h'20,h'20
+    SCREEN {gambPosX},{gambPosY}+3, h'5b,h'5b,h'5e,h'5e,h'5e
+    COLOR {gambPosX},{gambPosY}+2,5,{lightgreen}
+    COLOR {gambPosX},{gambPosY}+3,5,{lightgreen}
+
+    SCREEN {workPosX},{workPosY}+1, h'66,h'20,h'20,h'20
+    SCREEN {workPosX},{workPosY}+2, h'66,h'66,h'66,h'66
+    SCREEN {workPosX},{workPosY}+3, h'66,h'66,h'66,h'66
+    COLOR {workPosX},{workPosY}+1,4,{orange}
+    COLOR {workPosX},{workPosY}+2,4,{orange}
+    COLOR {workPosX},{workPosY}+3,4,{orange}
+
+    SCREEN {bankPosX},{bankPosY}+2, h'e8,h'e8,h'e8,h'e8
+    SCREEN {bankPosX},{bankPosY}+3, h'77,h'7f,h'7f,h'7f
+    COLOR {bankPosX},{bankPosY}+2,4,{lightgrey}
+    COLOR {bankPosX},{bankPosY}+3,4,{lightgrey}
+
+    TEXT {housePosX}-1,{housePosY}-2,{HOUSE}
+    COLOR {housePosX}-1,{housePosY}-2,len{HOUSE},{lightred}
+
+    TEXT {gambPosX},{gambPosY}-2,{GAMBLE}
+    COLOR {gambPosX},{gambPosY}-2,len{GAMBLE},{lightgreen}
+
+    TEXT {workPosX},{workPosY}-2,{WORK}
+    COLOR {workPosX},{workPosY}-2,len{WORK},{orange}
+
+    TEXT {bankPosX},{bankPosY}-2,{BANK}
+    COLOR {bankPosX},{bankPosY}-2,len{BANK},{lightgrey}
+    
+    CALL ShowNum {housePosX},{housePosY}+5,$money
+    CALL ShowNum {bankPosX},{bankPosY}+5,$bankmoney
+    TEXT {housePosX}-1,{housePosY}+5,$
+    COLOR {housePosX}-1,{housePosY}+5,7,{lightred}
+    TEXT {bankPosX}-1,{bankPosY}+5,$
+    COLOR {bankPosX}-1,{bankPosY}+5,7,{lightgrey}
+
+    TEXT 25,1,DAYS:
+    CALL ShowNum 30,1,$days
+    COLOR 25,1,11,{cyan}
+
+    define {MNU1}=CHOOSE_THE_PLACE_YOU_WANT_TO_MOVE   
+    TEXTINV 3,15,{MNU1}
+    COLOR 3,15,len{MNU1},{white}
+    
+    define {MNU2}=A:LEFT___D:RIGHT___E:CHOOSE
+    TEXTINV 5,17,{MNU2}
+    COLOR 5,17,len{MNU2},{white}
+
+    TEXT 31,24,MEM:
+    CALL ShowNum 35,24,{freebytes}
+
+    define {MNU3}=F1:LOAD
+    TEXTINV 8,21,{MNU3}
+    COLOR 8,21,len{MNU3},{lightgreen}
+    define {MNU4}=F5:SAVE
+    TEXTINV 24,21,{MNU4}
+    COLOR 24,21,len{MNU4},{lightgreen}
+
+    RETURN
+
+METHOD LoadState
+    COLOR 8,21,len{MNU3},{yellow}
+    OPEN 8,8,8,"SAVEG,R,S"
+    INPUT#8,$days,$money,$bankmoney,$bank_rate1,$bank_rate2,$bank_rate3,$house_ok,$house_bought,$bank_cap1,$bank_cap2,$bank_cap3
+    CLOSE 8
+    CALL ShowNum 30,1,$days
+    CALL ShowNum {housePosX},{housePosY}+5,$money
+    CALL ShowNum {bankPosX},{bankPosY}+5,$bankmoney
+    COLOR 8,21,len{MNU3},{lightgreen}
+    RETURN
+
+METHOD SaveState
+    COLOR 24,21,len{MNU4},{yellow}
+    OPEN 8,8,8,"@0:SAVEG,W,S"
+    PRINT#8,$days
+    PRINT#8,$money
+    PRINT#8,$bankmoney
+    PRINT#8,$bank_rate1
+    PRINT#8,$bank_rate2
+    PRINT#8,$bank_rate3
+    PRINT#8,$house_ok
+    PRINT#8,$house_bought
+    PRINT#8,$bank_cap1
+    PRINT#8,$bank_cap2
+    PRINT#8,$bank_cap3
+    CLOSE 8
+    COLOR 24,21,len{MNU4},{lightgreen}
+    RETURN
+
+METHOD ChooseMenu
+        []
+    $key=""
+    $menupos=0
+    $pre_menupos=0
+        [/]
+    
+
+    WHEN $menu_choosen<>-1
+            []
+        $menupos=$menu_choosen
+        $pre_menupos=$menupos
+            [/]
+        WHEN $menupos=0
+            INV {housePosX}-1,{housePosY}-2,5
+        SKIP
+        WHEN $menupos=1
+            INV {gambPosX},{gambPosY}-2,6
+        SKIP
+        WHEN $menupos=2
+            INV {workPosX},{workPosY}-2,4
+        SKIP
+        WHEN $menupos=3
+            INV {bankPosX},{bankPosY}-2,4
+        SKIP
+    ELSE
+        INV {housePosX}-1,{housePosY}-2,5
+    SKIP
+
+    WHILE $key<>"E" AND $key<>{keyE}
+        GET $key
+        IF $key="A" OR $key={keyA} THEN $menupos=$menupos-1
+        IF $key="D" OR $key={keyD} THEN $menupos=$menupos+1
+        WHEN $key=CHR$(h'85)
+            CALL LoadState
+        SKIP
+        WHEN $key=CHR$(h'87)
+            CALL SaveState
+        SKIP
+        IF $menupos<0 THEN $menupos=0
+        IF $menupos>3 THEN $menupos=3
+        WHEN $menupos<>$pre_menupos
+            WHEN $menupos=0
+                INV {housePosX}-1,{housePosY}-2,len{HOUSE}
+            SKIP
+            WHEN $menupos=1
+                INV {gambPosX},{gambPosY}-2,len{GAMBLE}
+            SKIP
+            WHEN $menupos=2
+                INV {workPosX},{workPosY}-2,len{WORK}
+            SKIP
+            WHEN $menupos=3
+                INV {bankPosX},{bankPosY}-2,len{BANK}
+            SKIP
+
+            WHEN $pre_menupos=0
+                CLRINV {housePosX}-1,{housePosY}-2,len{HOUSE}
+            SKIP 
+            WHEN $pre_menupos=1
+                CLRINV {gambPosX},{gambPosY}-2,len{GAMBLE}
+            SKIP
+            WHEN $pre_menupos=2
+                CLRINV {workPosX},{workPosY}-2,len{WORK}
+            SKIP
+            WHEN $pre_menupos=3
+                CLRINV {bankPosX},{bankPosY}-2,len{BANK}
+            SKIP
+            $pre_menupos=$menupos
+        SKIP
+    REPEAT
+    $menu_choosen=$menupos
+    RETURN
+
+METHOD ShowRace
+        []
+    ClearScreen
+    $pos={screen}+(2*40)+2
+    FOR $j=1->7
+        FOR $i=0->34
+            >> $pos+$i,h'43
+        NEXT
+        $pos=$pos+40
+    NEXT
+    $horse_bet=0
+        [/]
+
+    VTEXT 2,2,1234567
+    VFILL 37,2,7,h'65
+    COLOR 2,2,36,{lightgreen}
+    COLOR 2,3,36,{lightgreen}
+    COLOR 2,4,36,{lightgreen}
+    COLOR 2,5,36,{lightgreen}
+    COLOR 2,6,36,{lightgreen}
+    COLOR 2,7,36,{lightgreen}
+    COLOR 2,8,36,{lightgreen}
+    VCOLOR 2,2,7,{white}
+    VCOLOR 1,2,7,{white}
+
+    VFILL 3,2,7,{horsesign}
+    VCOLORS 3,2, 2,3,4,5,0,7,10
+
+    TEXT 3,0,MONEY:
+    CALL ShowNum 9,0,$money
+    COLOR 3,0,12,{cyan}
+    TEXT 15,0,BET:
+    CALL ShowNum 19,0,$horse_bet
+    COLOR 15,0,10,{yellow}
+
+    TEXTINV 3,16,W:UP_S:DOWN_E:SELECT_R:CONTINUE
+    COLOR 3,16,31,{lightred}
+
+    TEXTINV 2,18,CHOOSE_2_HORSE._ONE_OF_THEM_CAN_WIN
+    TEXTINV 2,19,SOME_HORSE_CAN_BE_FASTER_THEN_THE
+    TEXTINV 2,20,OTHERS_(BUT_NOT_UNTIL_FOREVER)
+    TEXTINV 2,21,GOOD_LUCK_:)
+
+    RETURN
+
+
+METHOD ChooseHorses
+        []
+    $horse_mnupos=0
+    $horse_premnupos=0
+    $horse_mnucnt=0
+    $pos={screen}+(40*($horse_mnupos+2))+1
+    >> $pos,{gamblemnusign}
+    $horse_chn1=-1
+    $horse_chn2=-1
+        [/]
+@chooseHorses:
+    GET $key
+    IF $key="W" OR $key={keyW} THEN $horse_mnupos=$horse_mnupos-1
+    IF $key="S" OR $key={keyS} THEN $horse_mnupos=$horse_mnupos+1
+    WHEN $key="E" OR $key={keyE}
+        $cpos={color}+(40*($horse_mnupos+2))+2
+        WHEN PEEK($cpos)<>{yellow} AND $horse_mnucnt<2
+                []
+            >> $cpos,{yellow}
+            $pos={screen}+(40*($horse_mnupos+2))+2
+            >> $pos,PEEK($pos) OR h'80
+            $horse_mnucnt=$horse_mnucnt+1
+                [/]
+            WHEN $horse_chn1=-1
+                $horse_chn1=$horse_mnupos
+            ELSE
+                $horse_chn2=$horse_mnupos
+            SKIP
+            GOTO @chooseHorses:
+        SKIP
+    SKIP
+    WHEN ($key="R" OR $key={keyR}) AND $horse_chn1<>-1 AND $horse_chn2<>-1
+        GOTO @chooseHorsesEnd:
+    SKIP
+    IF $horse_mnupos<0 THEN $horse_mnupos=0
+    IF $horse_mnupos>6 THEN $horse_mnupos=6
+    WHEN $horse_mnupos<>$horse_premnupos
+            []
+        $pos={screen}+(40*($horse_premnupos+2))+1
+        >> $pos,h'20
+        $pos={screen}+(40*($horse_mnupos+2))+1
+        >> $pos,{gamblemnusign}
+        $horse_premnupos=$horse_mnupos
+            [/]
+    SKIP
+    GOTO @chooseHorses:
+@chooseHorsesEnd:
+    
+    RETURN
+
+METHOD ChooseHorseBet
+    define {HORSEBET_CONTROLS1}=A:LEFT_D:RIGHT_E:SELECT_&_START
+    define {HORSEBET_CONTROLS2}=Q:EXIT
+    TEXTINV 2,15,{HORSEBET_CONTROLS1}
+    TEXTINV 2,16,{HORSEBET_CONTROLS2}
+    COLOR 2,15,len{HORSEBET_CONTROLS1},{lightred}
+    COLOR 2,16,len{HORSEBET_CONTROLS2},{lightred}
+    FILL 8,16,26,h'20
+    FILL 2,18,35,h'e0
+    FILL 2,19,35,h'e0
+    FILL 2,20,35,h'e0
+    FILL 2,21,35,h'e0
+    TEXTINV 10,18,CHOOSE_THE_BET
+
+    define {HORSEBET1}=10___25___50___100__500__1000
+    TEXT 3,13,{HORSEBET1}
+    COLOR 2,13,len{HORSEBET1}+1,{white}
+
+    WHEN $money<10
+        define {HORSEBET2}=YOU_DONT_HAVE_MONEY
+        TEXTINV 6,20,{HORSEBET2}
+        COLOR 2,20,len{HORSEBET2},{lightred}
+
+        define {HORSEBET3}=FOR_THE_MINIMAL_BET
+        TEXTINV 6,21,{HORSEBET3}
+        COLOR 2,21,len{HORSEBET3},{lightred}
+    SKIP
+
+        []
+    $horse_mnupos=0
+    $horse_premnupos=0
+    $pos={screen}+(40*13)+2
+    >> $pos,h'1e
+        [/]
+@chooseHorseBetCycle:
+        GET $key
+        IF $key="A" OR $key={keyA} THEN $horse_mnupos=$horse_mnupos-1
+        IF $key="D" OR $key={keyD} THEN $horse_mnupos=$horse_mnupos+1
+        IF $key="E" OR $key={keyE} THEN GOTO @chooseHorseBetCycleEnd:
+        IF $key="Q" OR $key={keyQ} THEN $horse_mnupos=-1:GOTO @chooseHorseBetCycleEnd:
+        IF $horse_mnupos<0 THEN $horse_mnupos=0
+        IF $horse_mnupos>5 THEN $horse_mnupos=5
+        WHEN $horse_mnupos<>$horse_premnupos
+                []
+            $pos={screen}+(40*13)+2+(5*$horse_premnupos)
+            >> $pos,h'20
+            $pos={screen}+(40*13)+2+(5*$horse_mnupos)
+            >> $pos,h'1e
+            $horse_premnupos=$horse_mnupos
+                [/]
+        SKIP
+    GOTO @chooseHorseBetCycle:
+@chooseHorseBetCycleEnd:
+
+    WHEN $horse_mnupos=-1
+        $horse_bet=0
+        RETURN
+    SKIP
+    IF $horse_mnupos=0 THEN $horse_bet=10
+    IF $horse_mnupos=1 THEN $horse_bet=25
+    IF $horse_mnupos=2 THEN $horse_bet=50
+    IF $horse_mnupos=3 THEN $horse_bet=100
+    IF $horse_mnupos=4 THEN $horse_bet=500
+    IF $horse_mnupos=5 THEN $horse_bet=1000
+    IF $horse_bet>$money THEN $horse_bet=0:RETURN
+    $money=$money-$horse_bet
+    CALL ShowNum 9,0,$money
+    CALL ShowNum 19,0,$horse_bet    
+    RETURN
+
+METHOD RunRace
+    FILL 2,18,35,h'e0
+    FILL 2,19,35,h'e0
+    FILL 2,20,35,h'e0
+    FILL 2,21,35,h'e0
+    TEXTINV 2,18,THE_RACE_HAS_BEEN_STARTED
+
+    # FIRST INIT
+    $horse_done=0
+    WHEN $horse_str(0)=-1
+            []
+        FOR $i=0->6
+            $rnd1=INT(RND(0)*{horse_str})+{horse_str_add}
+            $rnd2=INT(RND(0)*{horse_str_term})+{horse_str_term_add}
+            $horse_str($i)=$rnd1
+            $horse_term($i)=$rnd2
+        NEXT
+            [/]
+    ELSE
+                []
+        FOR $i=0->6
+            $horse_term($i)=$horse_term($i)-1
+                [/]
+            WHEN $horse_term($i)=0
+                    []
+                $rnd1=INT(RND(0)*{horse_str})+{horse_str_add}
+                $rnd2=INT(RND(0)*{horse_str_term})+{horse_str_term_add}
+                $horse_str($i)=$rnd1
+                $horse_term($i)=$rnd2
+                    [/]
+            SKIP
+        NEXT
+    SKIP
+        []
+    FOR $i=0->6
+        $rnd1=INT(RND(0)*2)-1
+        $horse_speed($i)=12-$horse_str($i)+$rnd1
+        $horse_pos($i)=0
+        $horse_prepos($i)=0
+        $horse_done($i)={false}
+        $horse_steps($i)=0
+        $horse_orders($i)=0
+        $pos={screen}+(40*($i+2))+3
+    NEXT
+        [/]
+    $step=0
+
+    $i=0
+    $j=0
+    WHILE $step<2
+        IF $horse_done(0)={false} THEN $horse_steps(0)=$horse_steps(0)+1
+        IF $horse_done(1)={false} THEN $horse_steps(1)=$horse_steps(1)+1
+        IF $horse_done(2)={false} THEN $horse_steps(2)=$horse_steps(2)+1
+        IF $horse_done(3)={false} THEN $horse_steps(3)=$horse_steps(3)+1
+        IF $horse_done(4)={false} THEN $horse_steps(4)=$horse_steps(4)+1
+        IF $horse_done(5)={false} THEN $horse_steps(5)=$horse_steps(5)+1
+        IF $horse_done(6)={false} THEN $horse_steps(6)=$horse_steps(6)+1
+
+        IF $horse_done(0)={false} AND $horse_steps(0)>=$horse_speed(0) THEN $horse_pos(0)=$horse_pos(0)+2:$horse_steps(0)=0
+        IF $horse_done(1)={false} AND $horse_steps(1)>=$horse_speed(1) THEN $horse_pos(1)=$horse_pos(1)+2:$horse_steps(1)=0
+        IF $horse_done(2)={false} AND $horse_steps(2)>=$horse_speed(2) THEN $horse_pos(2)=$horse_pos(2)+2:$horse_steps(2)=0
+        IF $horse_done(3)={false} AND $horse_steps(3)>=$horse_speed(3) THEN $horse_pos(3)=$horse_pos(3)+2:$horse_steps(3)=0
+        IF $horse_done(4)={false} AND $horse_steps(4)>=$horse_speed(4) THEN $horse_pos(4)=$horse_pos(4)+2:$horse_steps(4)=0
+        IF $horse_done(5)={false} AND $horse_steps(5)>=$horse_speed(5) THEN $horse_pos(5)=$horse_pos(5)+2:$horse_steps(5)=0
+        IF $horse_done(6)={false} AND $horse_steps(6)>=$horse_speed(6) THEN $horse_pos(6)=$horse_pos(6)+2:$horse_steps(6)=0
+        
+        IF $horse_done(0)={false} AND $horse_pos(0)>=33 THEN $horse_pos(0)=33:$horse_done(0)={true}:$step=$step+1:$horse_orders(0)=$j
+        IF $horse_done(1)={false} AND $horse_pos(1)>=33 THEN $horse_pos(1)=33:$horse_done(1)={true}:$step=$step+1:$horse_orders(1)=$j
+        IF $horse_done(2)={false} AND $horse_pos(2)>=33 THEN $horse_pos(2)=33:$horse_done(2)={true}:$step=$step+1:$horse_orders(2)=$j
+        IF $horse_done(3)={false} AND $horse_pos(3)>=33 THEN $horse_pos(3)=33:$horse_done(3)={true}:$step=$step+1:$horse_orders(3)=$j
+        IF $horse_done(4)={false} AND $horse_pos(4)>=33 THEN $horse_pos(4)=33:$horse_done(4)={true}:$step=$step+1:$horse_orders(4)=$j
+        IF $horse_done(5)={false} AND $horse_pos(5)>=33 THEN $horse_pos(5)=33:$horse_done(5)={true}:$step=$step+1:$horse_orders(5)=$j
+        IF $horse_done(6)={false} AND $horse_pos(6)>=33 THEN $horse_pos(6)=33:$horse_done(6)={true}:$step=$step+1:$horse_orders(6)=$j
+
+        WHEN $horse_prepos(0)<>$horse_pos(0)
+                []
+            $pos={screen}+(40*2)+$horse_prepos(0)+3
+            $cpos={color}+(40*2)+$horse_prepos(0)+3
+            >> $pos,h'40
+            >> $cpos,{lightgreen}
+            $pos={screen}+(40*2)+$horse_pos(0)+3
+            $cpos={color}+(40*2)+$horse_pos(0)+3
+            >> $pos,{horsesign}
+            >> $cpos,1
+            $horse_prepos(0)=$horse_pos(0)
+                [/]
+        SKIP
+        WHEN $horse_prepos(1)<>$horse_pos(1)
+                []
+            $pos={screen}+(40*3)+$horse_prepos(1)+3
+            $cpos={color}+(40*3)+$horse_prepos(1)+3
+            >> $pos,h'40
+            >> $cpos,{lightgreen}
+            $pos={screen}+(40*3)+$horse_pos(1)+3
+            $cpos={color}+(40*3)+$horse_pos(1)+3
+            >> $pos,{horsesign}
+            >> $cpos,3
+            $horse_prepos(1)=$horse_pos(1)
+                [/]
+        SKIP
+        WHEN $horse_prepos(2)<>$horse_pos(2)
+                []
+            $pos={screen}+(40*4)+$horse_prepos(2)+3
+            $cpos={color}+(40*4)+$horse_prepos(2)+3
+            >> $pos,h'40
+            >> $cpos,{lightgreen}
+            $pos={screen}+(40*4)+$horse_pos(2)+3
+            $cpos={color}+(40*4)+$horse_pos(2)+3
+            >> $pos,{horsesign}
+            >> $cpos,4
+            $horse_prepos(2)=$horse_pos(2)
+                [/]
+        SKIP
+        WHEN $horse_prepos(3)<>$horse_pos(3)
+                []
+            $pos={screen}+(40*5)+$horse_prepos(3)+3
+            $cpos={color}+(40*5)+$horse_prepos(3)+3
+            >> $pos,h'40
+            >> $cpos,{lightgreen}
+            $pos={screen}+(40*5)+$horse_pos(3)+3
+            $cpos={color}+(40*5)+$horse_pos(3)+3
+            >> $pos,{horsesign}
+            >> $cpos,5
+            $horse_prepos(3)=$horse_pos(3)
+                [/]
+        SKIP
+        WHEN $horse_prepos(4)<>$horse_pos(4)
+                []
+            $pos={screen}+(40*6)+$horse_prepos(4)+3
+            $cpos={color}+(40*6)+$horse_prepos(4)+3
+            >> $pos,h'40
+            >> $cpos,{lightgreen}
+            $pos={screen}+(40*6)+$horse_pos(4)+3
+            $cpos={color}+(40*6)+$horse_pos(4)+3
+            >> $pos,{horsesign}
+            >> $cpos,0
+            $horse_prepos(4)=$horse_pos(4)
+                [/]
+        SKIP
+        WHEN $horse_prepos(5)<>$horse_pos(5)
+                []
+            $pos={screen}+(40*7)+$horse_prepos(5)+3
+            $cpos={color}+(40*7)+$horse_prepos(5)+3
+            >> $pos,h'40
+            >> $cpos,{lightgreen}
+            $pos={screen}+(40*7)+$horse_pos(5)+3
+            $cpos={color}+(40*7)+$horse_pos(5)+3
+            >> $pos,{horsesign}
+            >> $cpos,7
+            $horse_prepos(5)=$horse_pos(5)
+                [/]
+        SKIP
+        WHEN $horse_prepos(6)<>$horse_pos(6)
+                []
+            $pos={screen}+(40*8)+$horse_prepos(6)+3
+            $cpos={color}+(40*8)+$horse_prepos(6)+3
+            >> $pos,h'40
+            >> $cpos,{lightgreen}
+            $pos={screen}+(40*8)+$horse_pos(6)+3
+            $cpos={color}+(40*8)+$horse_pos(6)+3
+            >> $pos,{horsesign}
+            >> $cpos,10
+            $horse_prepos(6)=$horse_pos(6)
+                [/]
+        SKIP
+            []
+        $i=$i+1
+        $j=$j+1
+            [/]
+        WHEN $i>={horses_unpredictable}
+                []
+            $rnd1=INT(RND(0)*6)
+            $rnd2=$rnd1
+                [/]
+            WHILE $rnd2=$rnd1
+                $rnd2=INT(RND(0)*6)
+            REPEAT
+                []
+            $horse_speed($rnd1)=$horse_speed($rnd1)+1
+            $horse_speed($rnd2)=$horse_speed($rnd2)-1
+            $horse_steps($rnd1)=2
+            $horse_steps($rnd2)=$horse_speed($rnd2)-1
+                [/]
+            IF $horse_speed($rnd2)<2 THEN $horse_speed($rnd2)=2
+            IF $horse_speed($rnd1)>12 THEN $horse_speed($rnd1)=12
+
+            $rnd1=INT(RND(0)*{horses_fallrate})
+            WHEN $rnd1=1
+                $rnd1=INT(RND(0)*6)
+                WHEN $horse_done($rnd1)={false}
+                        []
+                    $pos={screen}+(40*($rnd1+2))+$horse_pos($rnd1)+3
+                    >> $pos,{brokenhorse}
+                    $horse_speed($rnd1)=9999
+                    $horse_done($rnd1)={true}
+                    $horse_orders($rnd1)=0
+                        [/]
+                SKIP
+            SKIP
+            $i=0
+        SKIP
+        ! CALL Wait 15
+    REPEAT
+
+    $horse_1st=-1
+    TEXTINV 2,18,THE_RACE_HAS_BEEN_FINISHED
+    FOR $i=0->6
+        WHEN $horse_orders($i)>0
+            WHEN $horse_1st=-1
+                $horse_1st=$i
+            ELSE
+                $horse_2nd=$i
+            SKIP
+        SKIP
+    NEXT
+
+    WHEN $horse_orders($horse_1st) > $horse_orders($horse_2nd)
+            []
+        $tmp=$horse_1st
+        $horse_1st=$horse_2nd
+        $horse_2nd=$tmp
+            [/]
+    SKIP
+
+    TEXTINV 2,19,THE_WINNER_IS
+        []
+    $pos={screen}+(40*19)+16
+    >> $pos,h'b1+$horse_1st
+
+    $tmp={false}
+    $pre_money=$money+$horse_bet
+        [/]
+    WHEN $horse_chn1=$horse_1st OR $horse_chn2=$horse_1st
+            []
+        $money=$money+$horse_bet+($horse_bet*{win_rate1st})
+        $tmp={true}
+            [/]
+    SKIP
+    WHEN $horse_chn1=$horse_2nd OR $horse_chn2=$horse_2nd
+        WHEN $tmp={true}
+            $money=$money+INT($horse_bet*{win_rate2ndAdd})
+        ELSE
+            $money=$money+$horse_bet+INT($horse_bet*{win_rate2nd})
+        SKIP
+    SKIP
+
+    WHEN $money>$pre_money
+        CALL ShowNum 9,0,$money
+        CALL ShowNum 19,0,$horse_bet
+        TEXTINV 2,20,CONGRATULATIONS!_YOU_WON_$
+        CALL ShowNum 28,20,($money-$pre_money)
+        CALL ShowNum 19,0,0
+    ELSE
+        TEXTINV 2,20,UNFORTUNATELY_YOU_DIDN'T_WIN
+    SKIP
+
+    define {RACE1}=PRESS_R_TO_MENU
+    TEXTINV 2,23,{RACE1}
+    COLOR 2,23,len{RACE1},{Lightgreen}
+
+    $key=""
+    WHILE $key<>"R" AND $key<>{keyR}
+        GET $key
+    REPEAT
+
+    CALL DayStep
+
+    RETURN
+
+
+METHOD ShowBank
+    ClearScreen
+    define {BANK1}=ACCOUNT:
+    TEXT 5,3,{BANK1}
+    CALL ShowNum 13,3,$money
+    COLOR 5,3,len{BANK1}+6,{Lightgreen}
+
+    define {BANK2}=INVEST_TOTAL:
+    TEXT 5,4,{BANK2}
+    CALL ShowNum 18,4,$bankmoney
+    COLOR 5,4,len{BANK2}+6,{yellow}
+
+    TEXTINV 1,6,INVEST
+    TEXT 1,7,NORTH_1
+    TEXT 1,8,NORTH_2
+    TEXT 1,9,BALANCE
+    TEXTINV 9,6,RATE
+    CALL ShowRate 9,7,$bank_rate1
+    CALL ShowRate 9,8,$bank_rate2
+    CALL ShowRate 9,9,$bank_rate3
+    
+    TEXTINV 16,6,ACTION
+    TEXT 16,7,1:BUY_4:SELL
+    TEXT 16,8,2:BUY_5:SELL
+    TEXT 16,9,3:BUY_6:SELL
+
+    TEXTINV 29,6,TOTAL
+    CALL ShowNum 29,7,$bank_cap1
+    CALL ShowNum 29,8,$bank_cap2
+    CALL ShowNum 29,9,$bank_cap3
+
+    COLOR 1,6,33,{lightgrey}
+    COLOR 1,7,33,{cyan}
+    COLOR 1,8,33,{Lightgreen}
+    COLOR 1,9,33,{lightred}
+
+    TEXTINV 9,11,1-3:BUY__4-6:SELL__R:DONE
+    COLOR 9,11,25,{white}
+
+    TEXTINV 8,13,BUY_OR_SELL_INVESTMENTS
+    TEXTINV 10,14,TO_EARN_MORE_MONEY
+    TEXTINV 13,15,IN_EVERY_DAY
+    TEXTINV 6,17,RATE_CAN_CHANGED_LATER
+    TEXTINV 6,18,BALANCE_HAS_FIX_RATE
+
+    RETURN
+
+METHOD RunBank
+
+@runBankCycle:
+    GET $key
+    WHEN $key="1" OR $key={key1}
+        $tmp=100
+        WHEN $money>100
+            $tmp=100
+        ELSE
+            $tmp=$money
+        SKIP
+            []
+        $money=$money-$tmp
+        $bank_cap1=$bank_cap1+$tmp
+        $bankmoney=$bankmoney+$tmp
+            [/]
+        CALL ShowNum 29,7,$bank_cap1
+        CALL ShowNum 13,3,$money
+        CALL ShowNum 18,4,$bankmoney
+    SKIP
+    WHEN $key="2" OR $key={key2}
+        $tmp=100
+        WHEN $money>100
+            $tmp=100
+        ELSE
+            $tmp=$money
+        SKIP
+            []
+        $money=$money-$tmp
+        $bank_cap2=$bank_cap2+$tmp
+        $bankmoney=$bankmoney+$tmp
+            [/]
+        CALL ShowNum 29,8,$bank_cap2
+        CALL ShowNum 13,3,$money
+        CALL ShowNum 18,4,$bankmoney
+    SKIP
+    WHEN $key="3" OR $key={key3}
+        $tmp=100
+        WHEN $money>100
+            $tmp=100
+        ELSE
+            $tmp=$money
+        SKIP
+            []
+        $money=$money-$tmp
+        $bank_cap3=$bank_cap3+$tmp
+        $bankmoney=$bankmoney+$tmp
+            [/]
+        CALL ShowNum 29,9,$bank_cap3
+        CALL ShowNum 13,3,$money
+        CALL ShowNum 18,4,$bankmoney
+    SKIP
+    WHEN $key="4" OR $key={key4}
+        $tmp=100
+        WHEN $bank_cap1>100
+            $tmp=100
+        ELSE
+            $tmp=$bank_cap1
+        SKIP
+            []
+        $money=$money+$tmp
+        $bank_cap1=$bank_cap1-$tmp
+        $bankmoney=$bankmoney-$tmp
+            [/]
+        CALL ShowNum 29,7,$bank_cap1
+        CALL ShowNum 13,3,$money
+        CALL ShowNum 18,4,$bankmoney
+    SKIP
+    WHEN $key="5" OR $key={key5}
+        $tmp=100
+        WHEN $bank_cap2>100
+            $tmp=100
+        ELSE
+            $tmp=$bank_cap2
+        SKIP
+            []
+        $money=$money+$tmp
+        $bank_cap2=$bank_cap2-$tmp
+        $bankmoney=$bankmoney-$tmp
+            [/]
+        CALL ShowNum 29,8,$bank_cap2
+        CALL ShowNum 13,3,$money
+        CALL ShowNum 18,4,$bankmoney
+    SKIP
+    WHEN $key="6" OR $key={key6}
+        $tmp=100
+        WHEN $bank_cap3>100
+            $tmp=100
+        ELSE
+            $tmp=$bank_cap3
+        SKIP
+            []
+        $money=$money+$tmp
+        $bank_cap3=$bank_cap3-$tmp
+        $bankmoney=$bankmoney-$tmp
+            [/]
+        CALL ShowNum 29,9,$bank_cap3
+        CALL ShowNum 13,3,$money
+        CALL ShowNum 18,4,$bankmoney
+    SKIP
+
+    IF $key="R" OR $key={keyR} THEN GOTO @runBankCycleEnd:
+    GOTO @runBankCycle:
+@runBankCycleEnd:
+
+    RETURN
+
+METHOD ShowHouse
+    ClearScreen
+    TEXTINV 10,6,1_-_REST
+    COLOR 10,6,8,{white}
+    TEXTINV 10,8,2_-_BUY_HOUSE_{house_price1}
+    TEXTINV 10,10,3_-_BUY_HOUSE_{house_price2}
+    TEXTINV 10,12,4_-_BUY_HOUSE_{house_price3}
+
+    $tmp=0
+    IF ($house_bought AND 1)>0 THEN $tmp=$tmp+{houserentperday1}
+    IF ($house_bought AND 2)>0 THEN $tmp=$tmp+{houserentperday2}
+    TEXT 5,1,INCOME_PER_DAY:
+    CALL ShowNum 20,1,$tmp
+    COLOR 5,1,21,{lightgreen}
+
+    TEXTINV 4,18,1:REST__2-4:BUY__R:EXIT
+
+    TEXTINV 3,22,BUY_3_HOUSE_TO_PERFORM_THE_QUEST
+    TEXTINV 2,23,SLEEP_A_DAY_&_INCREASE_INVESTMENTS
+
+    WHEN ($house_ok AND 1)>0
+        WHEN ($house_bought AND 1)>0
+            COLOR 10,8,19,{lightred}
+        ELSE
+            COLOR 10,8,19,{white}
+        SKIP
+    ELSE
+        COLOR 10,8,19,{grey}
+    SKIP
+    WHEN ($house_ok AND 2)>0
+        WHEN ($house_bought AND 2)>0
+            COLOR 10,10,19,{lightred}
+        ELSE
+            COLOR 10,10,19,{white}
+        SKIP
+    ELSE
+        COLOR 10,10,19,{grey}
+    SKIP
+    WHEN ($house_ok AND 4)>0
+        WHEN ($house_bought AND 4)>0
+            COLOR 10,12,19,{lightred}
+        ELSE
+            COLOR 10,12,19,{white}
+        SKIP
+    ELSE
+        COLOR 10,12,19,{grey}
+    SKIP
+
+    TEXT 5,0,MONEY:
+    CALL ShowNum 11,0,$money
+    COLOR 5,0,12,{yellow}
+
+    RETURN
+
+METHOD FinishGame
+    ClearScreen
+    TEXTINV 11,4,CONGRATULATIONS
+    TEXTINV 4,6,YOU_HAVE_COMPLETED_THE_QUEST
+    TEXTINV 10,8,YOU_WAS_GREAT_:)
+    TEXTINV 11,10,DAYS:
+    TEXTINV 4,18,PRESS_R_TO_GO_MENU
+    COLOR 4,18,18,{lightgreen}
+    CALL ShowNum 16,10,$days
+    FOR $i=416->422
+        >> {screen}+$i,PEEK({screen}+$i) OR h'80
+    NEXT
+        []
+    $key=""
+    $i=0
+    $j=0
+        [/]
+    WHILE $key<>"R" AND $key<>{keyR}
+        GET $key
+        WHEN $i<32
+            VCOLOR $i+1,4,7,{cyan}
+            VCOLOR $i+2,4,7,{lightgreen}
+            VCOLOR $i+3,4,7,{yellow}
+            VCOLOR $i+4,4,7,{lightgreen}
+            VCOLOR $i+5,4,7,{cyan}
+            VCOLOR $i,4,7,{lightblue}
+        SKIP
+        $i=$i+1
+        IF $i>43 THEN $i=0
+    REPEAT
+    RETURN
+
+METHOD RunHouseMenu
+
+    $key=""
+    WHILE $key<>"R" AND $key<>{keyR}
+        GET $key
+        WHEN $key=CHR$(h'31) OR $key=CHR$(h'21)
+            TEXT 4,4,SLEEP:
+            COLOR 4,4,33,{lightgreen}
+            $pos={screen}+(4*40)+10
+            >> $pos,h'6a
+            >> $pos+25,h'65
+            FOR $i=1->24
+                CALL Wait 5
+                >> $pos+$i,h'e0
+            NEXT
+            CALL DayStep
+            RETURN
+        SKIP
+        WHEN $key=CHR$(h'32) OR $key=CHR$(h'22)
+            WHEN ($house_bought AND 1)=0 AND $money>{house_price1}
+                    []
+                $money=$money-{house_price1}
+                $house_bought=$house_bought OR 1
+                $house_ok=$house_ok OR 2
+                    [/]
+                CALL ShowNum 11,0,$money
+                COLOR 10,8,19,{lightred}
+                COLOR 10,10,19,{white}
+                CALL ShowNum 20,1,{houserentperday1}
+            SKIP
+        SKIP
+        WHEN $key=CHR$(h'33) OR $key=CHR$(h'23)
+            WHEN ($house_bought AND 2)=0 AND $money>{house_price2}
+                    []
+                $money=$money-{house_price2}
+                $house_bought=$house_bought OR 2
+                $house_ok=$house_ok OR 4
+                    [/]
+                CALL ShowNum 11,0,$money
+                COLOR 10,10,19,{lightred}
+                COLOR 10,12,19,{white}
+                CALL ShowNum 20,1,{houserentperday1}+{houserentperday2}
+            SKIP
+        SKIP
+        WHEN $key=CHR$(h'34) OR $key=CHR$(h'24)
+            WHEN ($house_bought AND 4)=0 AND $money>{house_price3}
+                    []
+                $money=$money-{house_price3}
+                $house_bought=$house_bought OR 4
+                $house_ok=$house_ok OR 8
+                $finished={true}
+                    [/]
+                CALL ShowNum 11,0,$money
+                COLOR 10,12,19,{lightred}
+                CALL FinishGame
+            SKIP
+        SKIP
+        ! CALL Wait 25
+    REPEAT
+    RETURN
+
+
+METHOD StartMenuCommand
+    WHEN $menu_choosen=0
+        CALL ShowHouse
+        CALL RunHouseMenu
+        RETURN
+    SKIP
+    WHEN $menu_choosen=1
+        CALL ShowRace
+        CALL ChooseHorses
+        CALL ChooseHorseBet
+        WHEN $horse_bet>0
+            CALL RunRace
+        SKIP
+        RETURN
+    SKIP
+    WHEN $menu_choosen=2
+        CALL ShowWork
+        CALL RunWork
+        RETURN
+    SKIP
+    WHEN $menu_choosen=3
+        CALL ShowBank
+        CALL RunBank
+    SKIP
+
+    RETURN
+
+@start:
+    ! CALL MainMenu
+        []
+    $horse_str(0)=-1
+    $bankmoney=0
+    $bank_cap1=0
+    $bank_cap2=0
+    $bank_cap3=0
+    $bank_rate1=INT(RND(0)*{rate1rnd})+{rate1add}
+    $bank_rate2=INT(RND(0)*{rate2rnd})+{rate2add}
+    $bank_rate3={rate3fix}
+    $menu_choosen=-1
+    $house_ok=1
+    $house_bought=0
+    $finished={false}
+    ! $money=0
+    ? $money=10
+        [/]
+@core:
+    IF $finished={true} THEN GOTO @start:
+    CALL Menu
+    CALL ChooseMenu
+    CALL StartMenuCommand
+    GOTO @core:
