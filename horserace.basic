@@ -140,8 +140,8 @@ define {house_price1}=2000
 define {house_price2}=5000
 define {house_price3}=10000
 
-define {houserentperday1}=55
-define {houserentperday2}=125
+define {houserentperday1}=10
+define {houserentperday2}=18
 
 # resources
 define {HOUSE}=HOUSE
