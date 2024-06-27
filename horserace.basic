@@ -27,12 +27,6 @@ define {keyR}=CHR$(h'd2)
 define {keyQ}=CHR$(h'd1)
 define {keyP}=CHR$(h'd0)
 define {keyShSpace}=CHR$(h'a0)
-define {key1}=CHR$(h'21)
-define {key2}=CHR$(h'22)
-define {key3}=CHR$(h'23)
-define {key4}=CHR$(h'24)
-define {key5}=CHR$(h'25)
-define {key6}=CHR$(h'26)
 
 number $xpos
 number $ypos
@@ -617,10 +611,10 @@ METHOD ChooseMenu
         GET $key
         IF $key="A" OR $key={keyA} THEN $menupos=$menupos-1
         IF $key="D" OR $key={keyD} THEN $menupos=$menupos+1
-        WHEN $key=CHR$(h'85)
+        WHEN $key=CHR$(h'85) OR $key=CHR$(h'89)
             CALL LoadState
         SKIP
-        WHEN $key=CHR$(h'87)
+        WHEN $key=CHR$(h'87) OR $key=CHR$(h'8b)
             CALL SaveState
         SKIP
         IF $menupos<0 THEN $menupos=0
@@ -1130,13 +1124,13 @@ METHOD ShowBank
     COLOR 1,9,33,{lightred}
 
     TEXTINV 9,11,1-3:BUY__4-6:SELL__R:DONE
-    COLOR 9,11,25,{white}
+    TEXTINV 9,13,SHIFT+1-6:BUY/SELL_MORE
+    COLOR 9,11,39,{white}
+    COLOR 9,13,23,{white}
 
-    TEXTINV 8,13,BUY_OR_SELL_INVESTMENTS
-    TEXTINV 10,14,TO_EARN_MORE_MONEY
-    TEXTINV 13,15,IN_EVERY_DAY
-    TEXTINV 6,17,RATE_CAN_CHANGED_LATER
-    TEXTINV 6,18,BALANCE_HAS_FIX_RATE
+
+    TEXTINV 8,17,BUY_OR_SELL_INVESTMENTS
+    TEXTINV 10,19,TO_EARN_MONEY_DAILY
 
     RETURN
 
@@ -1144,10 +1138,11 @@ METHOD RunBank
 
 @runBankCycle:
     GET $key
-    WHEN $key="1" OR $key={key1}
-        $tmp=100
-        WHEN $money>100
-            $tmp=100
+    WHEN $key="1" OR $key="'"
+        $k=1000
+        IF $key="1" THEN $k=100
+        WHEN $money>$k
+            $tmp=$k
         ELSE
             $tmp=$money
         SKIP
@@ -1160,10 +1155,11 @@ METHOD RunBank
         CALL ShowNum 13,3,$money
         CALL ShowNum 18,4,$bankmoney
     SKIP
-    WHEN $key="2" OR $key={key2}
-        $tmp=100
-        WHEN $money>100
-            $tmp=100
+    WHEN $key="2" OR $key=CHR$(h'22)
+        $k=1000
+        IF $key="2" THEN $k=100
+        WHEN $money>$k
+            $tmp=$k
         ELSE
             $tmp=$money
         SKIP
@@ -1176,10 +1172,11 @@ METHOD RunBank
         CALL ShowNum 13,3,$money
         CALL ShowNum 18,4,$bankmoney
     SKIP
-    WHEN $key="3" OR $key={key3}
-        $tmp=100
-        WHEN $money>100
-            $tmp=100
+    WHEN $key="3" OR $key="+"
+        $k=1000
+        IF $key="3" THEN $k=100
+        WHEN $money>$k
+            $tmp=$k
         ELSE
             $tmp=$money
         SKIP
@@ -1192,10 +1189,11 @@ METHOD RunBank
         CALL ShowNum 13,3,$money
         CALL ShowNum 18,4,$bankmoney
     SKIP
-    WHEN $key="4" OR $key={key4}
-        $tmp=100
-        WHEN $bank_cap1>100
-            $tmp=100
+    WHEN $key="4" OR $key="!"
+        $k=1000
+        IF $key="4" THEN $k=100
+        WHEN $bank_cap1>$k
+            $tmp=$k
         ELSE
             $tmp=$bank_cap1
         SKIP
@@ -1208,10 +1206,11 @@ METHOD RunBank
         CALL ShowNum 13,3,$money
         CALL ShowNum 18,4,$bankmoney
     SKIP
-    WHEN $key="5" OR $key={key5}
-        $tmp=100
-        WHEN $bank_cap2>100
-            $tmp=100
+    WHEN $key="5" OR $key="%"
+        $k=1000
+        IF $key="5" THEN $k=100
+        WHEN $bank_cap2>$k
+            $tmp=$k
         ELSE
             $tmp=$bank_cap2
         SKIP
@@ -1224,10 +1223,11 @@ METHOD RunBank
         CALL ShowNum 13,3,$money
         CALL ShowNum 18,4,$bankmoney
     SKIP
-    WHEN $key="6" OR $key={key6}
-        $tmp=100
-        WHEN $bank_cap3>100
-            $tmp=100
+    WHEN $key="6" OR $key="?"
+        $k=1000
+        IF $key="6" THEN $k=100
+        WHEN $bank_cap3>$k
+            $tmp=$k
         ELSE
             $tmp=$bank_cap3
         SKIP
@@ -1305,7 +1305,7 @@ METHOD FinishGame
     ClearScreen
     TEXTINV 11,4,CONGRATULATIONS
     TEXTINV 4,6,YOU_HAVE_COMPLETED_THE_QUEST
-    TEXTINV 10,8,YOU_WAS_GREAT_:)
+    TEXTINV 10,8,YOU_WERE_GREAT_:)
     TEXTINV 11,10,DAYS:
     TEXTINV 4,18,PRESS_R_TO_GO_MENU
     COLOR 4,18,18,{lightgreen}
@@ -1425,6 +1425,7 @@ METHOD StartMenuCommand
 @start:
     ! CALL MainMenu
         []
+    $days=0
     $horse_str(0)=-1
     $bankmoney=0
     $bank_cap1=0
